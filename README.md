@@ -31,15 +31,15 @@ Al terminar sabrás:
 
 Antes de arreglar nada, comprueba qué falla. Prueba estas entradas y anota qué pasa:
 
-| Entrada | ¿Qué ocurre? |
-|---|---|
-| *(campo vacío)* | |
-| `abc` | |
-| `3.5` | |
-| `0` | |
-| `-4` | |
-| `99999999999` | |
-| `400000000` | |
+| Entrada | ¿Qué ocurre?                    |
+|---|---------------------------------|
+| *(campo vacío)* | la apliacion se cierra          |
+| `abc` | la apliacion se cierra          |
+| `3.5` | la apliacion se cierra          |
+| `0` | Pone edad 0                     |
+| `-4` | Pone -28                        |
+| `99999999999` | la apliacion se cierra          |
+| `400000000` | Aparecen los numero -1494967296 |
 
 > 💡 Cuando la app se cierre, abre el **Logcat** y busca la excepción. ¿Qué método la lanza? ¿Por qué el último caso no cierra la app pero da un resultado absurdo?
 
