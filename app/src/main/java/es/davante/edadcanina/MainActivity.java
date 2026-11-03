@@ -22,24 +22,13 @@ public class MainActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_main);
 
-
-
         // Declaramos variables
         ageEdit = findViewById(R.id.age_input);
         resultText = findViewById(R.id.result_text);
         Button button1 = findViewById(R.id.btn_calc);
 
-
-        // Implementar el boton (setOnClickListener)
-        button1.setOnClickListener(view -> calcularEdad()); {
-
-            String ageString = ageEdit.getText().toString();
-            int age = Integer.parseInt(ageString);
-            int dogAge = age * FACTOR_CANINO ;
-            resultText.setText(getString(R.string.tu_edad_format, dogAge));
-        };
-
-
+        // Implementar el botón (setOnClickListener)
+        button1.setOnClickListener(view -> calcularEdad());
     }
 
     private void calcularEdad() {
