@@ -13,6 +13,8 @@ public class MainActivity extends AppCompatActivity {
     private static final int FACTOR_CANINO = 7;
     private static final int EDAD_MINIMA = 1;
     private static final int EDAD_MAXIMA = 30; // ningún perro supera esta edad
+    private EditText ageEdit;
+    private TextView resultText;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -20,9 +22,11 @@ public class MainActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_main);
 
+
+
         // Declaramos variables
-        EditText ageEdit = findViewById(R.id.age_input);
-        TextView resultText = findViewById(R.id.result_text);
+        ageEdit = findViewById(R.id.age_input);
+        resultText = findViewById(R.id.result_text);
         Button button1 = findViewById(R.id.btn_calc);
 
 

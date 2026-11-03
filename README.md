@@ -136,7 +136,9 @@ ageEdit = findViewById(R.id.age_input);
 resultText = findViewById(R.id.result_text);
 ```
 
-> ❓ ¿Qué pasaría si dejaras `EditText ageEdit = findViewById(...)` dentro de `onCreate()`?
+> ❓ ¿Qué pasaría si dejaras `EditText ageEdit = findViewById(...)` dentro de `onCreate()`?ç
+
+Si dejo EditText ageEdit = findViewById(...) dentro de onCreate(), declaro una variable local nueva con el mismo nombre que el atributo de la clase, lo que se conoce como shadowing (ocultación). La variable local se inicializa correctamente, pero el atributo ageEdit de la clase nunca llega a asignarse y permanece en null.
 
 ## Paso 8 · Saca la lógica del botón a un método
 
