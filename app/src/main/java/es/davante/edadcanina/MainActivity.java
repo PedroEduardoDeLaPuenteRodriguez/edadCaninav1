@@ -10,6 +10,10 @@ import androidx.appcompat.app.AppCompatActivity;
 
 public class MainActivity extends AppCompatActivity {
 
+    private static final int FACTOR_CANINO = 7;
+    private static final int EDAD_MINIMA = 1;
+    private static final int EDAD_MAXIMA = 30; // ningún perro supera esta edad
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -27,7 +31,7 @@ public class MainActivity extends AppCompatActivity {
 
             String ageString = ageEdit.getText().toString();
             int age = Integer.parseInt(ageString);
-            int dogAge = age * 7;
+            int dogAge = age * FACTOR_CANINO ;
             resultText.setText(getString(R.string.tu_edad_format, dogAge));
         });
 
