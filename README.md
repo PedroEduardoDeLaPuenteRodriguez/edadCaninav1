@@ -175,6 +175,8 @@ Implementa el método siguiendo este orden. En cuanto algo falle, llama a `mostr
 
 > ❓ ¿Por qué limitar la edad a 30 evita también el desbordamiento que viste en el Paso 1?
 
+limitar la edad a 30 evita el desbordamiento porque age * FACTOR_CANINO nunca puede superar el máximo de un int (≈ 2.147 millones). Con 30 × 7 = 210 el resultado es minúsculo, mientras que sin límite, una edad enorme como 2000000000 daría un resultado que “da la vuelta” y se convierte en un número negativo o incorrecto.
+
 ## Paso 11 · Vuelve a probar
 
 Comprueba que **la app nunca se cierra**:
