@@ -73,6 +73,21 @@ En `res/values/strings.xml` añade tres textos nuevos:
 
 > ❓ ¿Qué significan `%1$d` y `%2$d`? ¿En qué orden se rellenan?
 
+%1$d y %2$d son marcadores de posición (placeholders) con formato de cadena de Android/Java. Se sustituyen por valores reales cuando usas el texto desde el código.
+
+Qué significa cada parte:
+
+% → indica el inicio del marcador.
+1$ / 2$ → la posición del argumento que se va a insertar (1 = primer argumento, 2 = segundo).
+d → el tipo de dato: entero decimal (decimal integer).
+
+¿En qué orden se rellenan?
+
+Se rellenan según el número que llevan, no según el orden en que aparecen en el texto:
+
+%1$d → recibe el primer argumento que pases.
+%2$d → recibe el segundo argumento.
+
 ## Paso 5 · Restringe la entrada desde el layout
 
 En el `EditText` (`@+id/age_input`) añade:
