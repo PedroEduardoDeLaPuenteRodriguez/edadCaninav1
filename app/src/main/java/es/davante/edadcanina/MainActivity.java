@@ -7,57 +7,46 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.databinding.DataBindingUtil;
 
 import es.davante.edadcanina.databinding.ActivityMainBinding;
+import es.davante.edadcanina.modelo.EdadCaninaModelo;
+import es.davante.edadcanina.modelo.Validacion;
 
 public class MainActivity extends AppCompatActivity {
 
-    private static final int FACTOR_CANINO = 7;
-    private static final int EDAD_MINIMA = 1;
-    private static final int EDAD_MAXIMA = 30; // ningún perro supera esta edad
-
-    // La clase ActivityMainBinding la genera Android a partir de activity_main.xml
     private ActivityMainBinding binding;
+    private final EdadCaninaModelo modelo = new EdadCaninaModelo();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
-
-        // Infla el layout Y crea el binding en un solo paso.
-        // Por eso ya no hace falta llamar a setContentView() aparte.
         binding = DataBindingUtil.setContentView(this, R.layout.activity_main);
 
-        binding.btnCalc.setOnClickListener(view -> calcularEdad());
+        binding.btnCalc.setOnClickListener(view -> calcular());
     }
 
-    private void calcularEdad() {
-        String texto = binding.ageInput.getText().toString().trim();
+    private void calcular() {
+        modelo.setEntrada(binding.ageInput.getText().toString());
+        Validacion validacion = modelo.calcular();
 
-        if (texto.isEmpty()) {
-            mostrarError(getString(R.string.error_vacio));
-            return;
+        if (validacion == Validacion.OK) {
+            binding.ageInput.setError(null);
+            binding.resultText.setText(getString(R.string.tu_edad_format, modelo.getEdadHumana()));
+        } else {
+            binding.ageInput.setError(textoDeError(validacion));
+            binding.ageInput.requestFocus();
+            binding.resultText.setText("");
         }
-
-        int age;
-        try {
-            age = Integer.parseInt(texto);
-        } catch (NumberFormatException e) {
-            mostrarError(getString(R.string.error_no_numero));
-            return;
-        }
-
-        if (age < EDAD_MINIMA || age > EDAD_MAXIMA) {
-            mostrarError(getString(R.string.error_rango, EDAD_MINIMA, EDAD_MAXIMA));
-            return;
-        }
-
-        binding.ageInput.setError(null);
-        int resultado = age * FACTOR_CANINO;
-        binding.resultText.setText(getString(R.string.tu_edad_format, resultado));
     }
 
-    private void mostrarError(String mensaje) {
-        binding.ageInput.setError(mensaje);
-        binding.ageInput.requestFocus();
-        binding.resultText.setText("");
+    private String textoDeError(Validacion validacion) {
+        switch (validacion) {
+            case VACIO:
+                return getString(R.string.error_vacio);
+            case NO_NUMERO:
+                return getString(R.string.error_no_numero);
+            default:
+                return getString(R.string.error_rango,
+                        EdadCaninaModelo.EDAD_MINIMA, EdadCaninaModelo.EDAD_MAXIMA);
+        }
     }
 }
