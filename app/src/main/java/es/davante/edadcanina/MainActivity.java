@@ -21,21 +21,17 @@ public class MainActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         binding = DataBindingUtil.setContentView(this, R.layout.activity_main);
 
-        binding.btnCalc.setOnClickListener(view -> calcular());
-    }
+        binding.setModelo(modelo);
 
-    private void calcular() {
-        modelo.setEntrada(binding.ageInput.getText().toString());
-        Validacion validacion = modelo.calcular();
-
-        if (validacion == Validacion.OK) {
-            binding.ageInput.setError(null);
-            binding.resultText.setText(getString(R.string.tu_edad_format, modelo.getEdadHumana()));
-        } else {
-            binding.ageInput.setError(textoDeError(validacion));
-            binding.ageInput.requestFocus();
-            binding.resultText.setText("");
-        }
+        binding.btnCalc.setOnClickListener(view -> {
+            Validacion validacion = modelo.calcular();
+            if (validacion == Validacion.OK) {
+                binding.ageInput.setError(null);
+            } else {
+                binding.ageInput.setError(textoDeError(validacion));
+                binding.ageInput.requestFocus();
+            }
+        });
     }
 
     private String textoDeError(Validacion validacion) {
