@@ -1,8 +1,8 @@
-# 🐶 EdadCanina · v1
+# 🐶 EdadCanina · v3 (MVC + DataBinding)
 
 Aplicación Android (Java) que calcula la edad "humana" de un perro multiplicando su edad por 7.
 
-Esta es la **versión 1**: funciona, pero no comprueba lo que escribe el usuario. Tu tarea es convertirla en la **versión 2** (rama `v2-validacion`), que valida la entrada y controla los errores sin que la app se cierre.
+Esta es la **versión 3** (rama `v3-mvc`): parte de la v2 (que ya valida la entrada) y reorganiza el código con el patrón **Modelo-Vista-Controlador**, enlazando la pantalla con **DataBinding**. La app hace lo mismo que antes, pero `MainActivity` ya no contiene la lógica.
 
 ---
 
@@ -10,203 +10,221 @@ Esta es la **versión 1**: funciona, pero no comprueba lo que escribe el usuario
 
 Al terminar sabrás:
 
-- Detectar por qué una app se cierra (`NumberFormatException`) y evitarlo con `try/catch`.
-- Validar datos de entrada: campo vacío, texto no numérico y rango de valores.
-- Mostrar errores al usuario con `EditText.setError()`.
-- Sustituir "números mágicos" por constantes.
-- Llevar los textos a `strings.xml` y usar formatos con varios parámetros.
-- Trabajar en una rama de Git distinta de `main`.
+- Activar DataBinding y dejar de usar `findViewById`.
+- Separar la lógica en un **Modelo** que no depende de Android y se puede probar con JUnit.
+- Hacer un modelo **observable** (`BaseObservable`, `@Bindable`, `notifyPropertyChanged`).
+- Enlazar la vista con el modelo con `@{...}` (un sentido) y `@={...}` (dos sentidos).
+- Crear un `@BindingAdapter` propio para mostrar los errores desde el XML.
+- Crear un **Controlador** sin referencias a vistas y enlazar los clics desde el XML.
+- Conservar el estado al girar la pantalla con `onSaveInstanceState`.
+- Trabajar con un commit y una etiqueta por cada paso.
 
 ---
 
-## Paso 0 · Prepara el proyecto
+## Estructura del proyecto
 
-1. Haz un **fork** de este repositorio (botón *Fork*) y clona tu fork:
-   ```bash
-   git clone https://github.com/TU_USUARIO/edadCaninav1.git
-   ```
-2. Ábrelo en Android Studio y ejecútalo en el emulador.
+```
+es.davante.edadcanina
+├── MainActivity.java
+├── modelo
+│   ├── EdadCaninaModelo.java
+│   └── Validacion.java
+├── vista
+│   └── AdaptadoresVista.java
+└── controlador
+    └── EdadCaninaControlador.java
+```
 
-## Paso 1 · Rompe la app (a propósito)
+| Pieza | Clase | Qué hace |
+|---|---|---|
+| Modelo | `EdadCaninaModelo`, `Validacion` | Guarda los datos, valida y calcula. No importa nada de `android.*` (solo `androidx.databinding`) ni contiene textos para el usuario. |
+| Vista | `activity_main.xml`, `AdaptadoresVista` | Muestra el modelo con `@{}` y `@={}`. El adaptador traduce cada `Validacion` a su texto. |
+| Controlador | `EdadCaninaControlador` | Recibe las acciones del usuario (`calcular()` y `limpiar()`) y se las pasa al modelo. No conoce ninguna vista. |
+| Ensamblador | `MainActivity` | Solo crea y conecta las piezas, y guarda y restaura el estado. |
 
-Antes de arreglar nada, comprueba qué falla. Prueba estas entradas y anota qué pasa:
+El `applicationId` es `es.davante.edadcanina.mvc`, distinto del de la v2, para que las dos versiones convivan en el emulador. El `namespace` no cambia.
 
-| Entrada | ¿Qué ocurre?                    |
-|---|---------------------------------|
-| *(campo vacío)* | la apliacion se cierra          |
-| `abc` | la apliacion se cierra          |
-| `3.5` | la apliacion se cierra          |
-| `0` | Pone edad 0                     |
-| `-4` | Pone -28                        |
-| `99999999999` | la apliacion se cierra          |
-| `400000000` | Aparecen los numero -1494967296 |
+---
 
-> 💡 Cuando la app se cierre, abre el **Logcat** y busca la excepción. ¿Qué método la lanza? ¿Por qué el último caso no cierra la app pero da un resultado absurdo?
-
-## Paso 2 · Crea la rama de trabajo
+## Paso 0 · Prepara la rama
 
 ```bash
-git checkout -b v2-validacion
+git checkout v2-validacion
+git checkout -b v3-mvc
 ```
 
-Todo lo que hagas a partir de aquí irá en esta rama; `main` se queda como está.
+## Paso 1 · Activar DataBinding
 
-## Paso 3 · Corrige los fallos que ya trae la v1
+En `app/build.gradle.kts` se cambia el `applicationId` y se añade, dentro de `android { }`:
 
-Antes de añadir nada nuevo, limpia lo que hay:
-
-1. **`activity_main.xml`**: busca la etiqueta de cierre `</TextView>>` y quita el `>` que sobra.
-2. **`strings.xml`**: en `tu_edad_format` hay una falta de ortografía ("fuero"). Corrígela.
-3. **Texto escrito "a fuego"**: el `android:hint="Ejemplo: 6"` del `EditText` está directamente en el layout. Llévalo a `strings.xml` con el nombre `hint_edad` y úsalo con `@string/hint_edad`.
-   > 💡 Android Studio marca este aviso en amarillo (*Hardcoded string*). Prueba `Alt + Enter` encima.
-4. **`MainActivity.java`**: hay tres `import` que no se usan (`Insets`, `ViewCompat`, `WindowInsetsCompat`). Elimínalos (`Ctrl + Alt + O`).
-
-## Paso 4 · Añade los mensajes de error
-
-En `res/values/strings.xml` añade tres textos nuevos:
-
-```xml
-<string name="error_vacio">Introduce la edad de tu perro</string>
-<string name="error_no_numero">Introduce un número entero válido</string>
-<string name="error_rango">La edad debe estar entre %1$d y %2$d años</string>
-```
-
-> ❓ ¿Qué significan `%1$d` y `%2$d`? ¿En qué orden se rellenan?
-
-%1$d y %2$d son marcadores de posición (placeholders) con formato de cadena de Android/Java. Se sustituyen por valores reales cuando usas el texto desde el código.
-
-Qué significa cada parte:
-
-% → indica el inicio del marcador.
-1$ / 2$ → la posición del argumento que se va a insertar (1 = primer argumento, 2 = segundo).
-d → el tipo de dato: entero decimal (decimal integer).
-
-¿En qué orden se rellenan?
-
-Se rellenan según el número que llevan, no según el orden en que aparecen en el texto:
-
-%1$d → recibe el primer argumento que pases.
-%2$d → recibe el segundo argumento.
-
-## Paso 5 · Restringe la entrada desde el layout
-
-En el `EditText` (`@+id/age_input`) añade:
-
-```xml
-android:inputType="number"
-android:maxLength="2"
-android:gravity="center"
-android:importantForAutofill="no"
-```
-
-| Atributo | Para qué sirve |
-|---|---|
-| `inputType="number"` | Muestra el teclado numérico: sin letras, sin signo menos ni decimales. |
-| `maxLength="2"` | No deja escribir más de 2 cifras. |
-| `gravity="center"` | Centra el número en el campo. |
-| `importantForAutofill="no"` | Evita que el sistema ofrezca autocompletar. |
-
-> ⚠️ Esto **no sustituye** a la validación en Java: el campo puede quedarse vacío y nunca conviene fiarse solo de la interfaz. Por eso seguimos con el código.
-
-## Paso 6 · Sustituye los números mágicos por constantes
-
-Al principio de la clase `MainActivity` declara:
-
-```java
-private static final int FACTOR_CANINO = 7;
-private static final int EDAD_MINIMA = 1;
-private static final int EDAD_MAXIMA = 30; // ningún perro supera esta edad
-```
-
-y usa `FACTOR_CANINO` en lugar del `7`.
-
-## Paso 7 · Convierte las vistas en atributos de la clase
-
-Ahora `ageEdit` y `resultText` son variables locales de `onCreate()`. Como vas a usarlas desde otros métodos, decláralas como atributos:
-
-```java
-private EditText ageEdit;
-private TextView resultText;
-```
-
-y en `onCreate()` asígnalas **sin volver a escribir el tipo**:
-
-```java
-ageEdit = findViewById(R.id.age_input);
-resultText = findViewById(R.id.result_text);
-```
-
-> ❓ ¿Qué pasaría si dejaras `EditText ageEdit = findViewById(...)` dentro de `onCreate()`?ç
-
-Si dejo EditText ageEdit = findViewById(...) dentro de onCreate(), declaro una variable local nueva con el mismo nombre que el atributo de la clase, lo que se conoce como shadowing (ocultación). La variable local se inicializa correctamente, pero el atributo ageEdit de la clase nunca llega a asignarse y permanece en null.
-
-## Paso 8 · Saca la lógica del botón a un método
-
-El `setOnClickListener` debe quedar así de corto:
-
-```java
-button1.setOnClickListener(view -> calcularEdad());
-```
-
-Toda la lógica pasa a un método nuevo: `private void calcularEdad()`.
-
-## Paso 9 · Crea un método para mostrar errores
-
-```java
-private void mostrarError(String mensaje) {
-    // 1. Mostrar el mensaje en el EditText (setError)
-    // 2. Poner el foco en el EditText (requestFocus)
-    // 3. Borrar el resultado anterior del TextView
+```kotlin
+buildFeatures {
+    dataBinding = true
 }
 ```
 
-## Paso 10 · Valida la entrada en `calcularEdad()`
-
-Implementa el método siguiendo este orden. En cuanto algo falle, llama a `mostrarError(...)` y sal con `return`:
-
-1. **Leer** el texto del `EditText` quitando espacios (`trim()`).
-2. **¿Está vacío?** → `error_vacio`. Recuerda que `Integer.parseInt("")` lanza `NumberFormatException`.
-3. **Convertir a `int`** dentro de un `try/catch (NumberFormatException e)` → si falla, `error_no_numero`.
-4. **¿Está en rango?** Si `age < EDAD_MINIMA || age > EDAD_MAXIMA` → `error_rango`. Para rellenar `%1$d` y `%2$d`:
-   ```java
-   getString(R.string.error_rango, EDAD_MINIMA, EDAD_MAXIMA)
-   ```
-5. **Todo correcto**: quita el error del campo (`setError(null)`), calcula `age * FACTOR_CANINO` y muestra el resultado con `tu_edad_format`.
-
-> ❓ ¿Por qué limitar la edad a 30 evita también el desbordamiento que viste en el Paso 1?
-
-limitar la edad a 30 evita el desbordamiento porque age * FACTOR_CANINO nunca puede superar el máximo de un int (≈ 2.147 millones). Con 30 × 7 = 210 el resultado es minúsculo, mientras que sin límite, una edad enorme como 2000000000 daría un resultado que “da la vuelta” y se convierte en un número negativo o incorrecto.
-
-## Paso 11 · Vuelve a probar
-
-Comprueba que **la app nunca se cierra**:
-
-| Entrada | Resultado esperado |
-|---|---|
-| *(vacío)* | Error: "Introduce la edad de tu perro" |
-| `0` | Error: "La edad debe estar entre 1 y 30 años" |
-| `31` | Error de rango |
-| `1` | "Si tu perro fuera humano tendría 7 años" |
-| `30` | "Si tu perro fuera humano tendría 210 años" |
-
-> 💡 Con el teclado numérico no puedes escribir `abc` ni `-4`. ¿Cómo comprobarías que el `try/catch` funciona? (Pista: quita `inputType` un momento.)
-
-## Paso 12 · Guarda y sube tu trabajo
-
 ```bash
-git add .
-git commit -m "Validación de la entrada y control de errores aritméticos"
-git push -u origin v2-validacion
+git add -A
+git commit -m "Paso 1: activar DataBinding"
+git tag paso-1
 ```
 
-Comprueba en GitHub que tu fork tiene ahora dos ramas: `main` y `v2-validacion`.
+## Paso 2 · Layout en `<layout>` y fuera `findViewById`
+
+- Los `xmlns` suben a la etiqueta raíz `<layout>` y el `LinearLayoutCompat` queda dentro.
+- `MainActivity` usa `DataBindingUtil.setContentView(...)` y accede a las vistas con `binding.ageInput`, `binding.resultText` y `binding.btnCalc`.
+
+```bash
+git add -A
+git commit -m "Paso 2: layout con <layout> y Activity con binding, sin findViewById"
+git tag paso-2
+```
+
+## Paso 3 · Modelo y pruebas JUnit
+
+- `Validacion` es un enum (`OK`, `VACIO`, `NO_NUMERO`, `FUERA_DE_RANGO`).
+- `EdadCaninaModelo` guarda la entrada, el resultado y el error, y `calcular()` valida y calcula.
+- Los setters del resultado y del error son privados: solo el modelo decide cuándo hay resultado o error.
+- Pruebas en `app/src/test`, en `EdadCaninaModeloTest`.
+
+```bash
+git add -A
+git commit -m "Paso 3: modelo EdadCaninaModelo y enum Validacion con pruebas JUnit"
+git tag paso-3
+```
+
+## Paso 4 · Modelo observable y enlaces `@{}` y `@={}`
+
+- El modelo extiende `BaseObservable`, los getters llevan `@Bindable` y los cambios se avisan con `notifyPropertyChanged`, solo cuando el valor cambia de verdad.
+- El `EditText` usa `@={modelo.entrada}` y el resultado usa `@{}` para el texto con formato y la visibilidad.
+- Cuando no hay resultado se usa `INVISIBLE` y no `GONE`, para que el hueco se mantenga y la pantalla no salte.
+
+```bash
+git add -A
+git commit -m "Paso 4: modelo observable y enlace de la vista con @{} y @={}"
+git tag paso-4
+```
+
+## Paso 5 · Errores desde el XML con `@BindingAdapter`
+
+- `AdaptadoresVista` (paquete `vista`) define `app:errorValidacion`, que recibe un `Validacion` y muestra el mensaje correspondiente con `setError`.
+- El `EditText` solo lleva `app:errorValidacion="@{modelo.error}"`. La Activity ya no llama a `setError` ni a `setText`.
+
+```bash
+git add -A
+git commit -m "Paso 5: errores mostrados desde el XML con un BindingAdapter propio"
+git tag paso-5
+```
+
+## Paso 6 · Controlador y botón Limpiar
+
+- `EdadCaninaControlador` tiene un método por acción: `calcular()` y `limpiar()`. No tiene referencias a vistas.
+- Los clics se enlazan desde el XML con `android:onClick="@{() -> controlador.calcular()}"`.
+- `limpiar()` del modelo deja entrada, resultado y error como al principio.
+- Pruebas del controlador en `EdadCaninaControladorTest`.
+
+```bash
+git add -A
+git commit -m "Paso 6: controlador EdadCaninaControlador, botón Limpiar y clics enlazados desde el XML"
+git tag paso-6
+```
+
+## Paso 7 · Conservar el estado al girar la pantalla
+
+- `onSaveInstanceState` guarda lo mínimo con claves constantes: la entrada (`KEY_ENTRADA`) y si ya se había calculado (`KEY_CALCULADO`).
+- El resultado y el error no se guardan: se vuelven a obtener llamando a `calcular()`.
+- La restauración se hace **antes** de enlazar el modelo con la vista.
+
+```bash
+git add -A
+git commit -m "Paso 7: conservar el estado al girar con onSaveInstanceState"
+git tag paso-7
+```
+
+---
+
+## Pruebas
+
+Las pruebas están en `app/src/test` y se ejecutan con `./gradlew testDebugUnitTest` o desde Android Studio (clic derecho sobre la carpeta de tests › *Run Tests*).
+
+| Clase | Qué comprueba |
+|---|---|
+| `EdadCaninaModeloTest` | Vacío, solo espacios, texto, número enorme, 0, 31, negativo, 6 (da 42), límites 1 y 30, error que borra el resultado y entrada que hace caducar el resultado. |
+| `EdadCaninaModeloObservableTest` | El modelo avisa al cambiar la entrada, no avisa si el valor es el mismo y avisa al calcular. |
+| `EdadCaninaControladorTest` | `calcular()` con entrada válida e inválida, y `limpiar()` (también con la entrada ya vacía). |
+
+---
+
+## Reto realizado
+
+[Escribe aquí el nombre del reto que has elegido de la guía y explica brevemente qué has hecho y cómo lo has probado.]
+
+---
+
+## Explícalo con tus palabras
+
+**¿Qué diferencia hay entre `@{}` y `@={}`?**
+
+`@{}` es un enlace de un solo sentido: cuando cambia el modelo, se actualiza la vista. `@={}` es bidireccional: además, lo que escribe el usuario llega solo al modelo, sin tener que leer el campo con `getText()`.
+
+**¿Por qué `setEntrada` comprueba si el valor ha cambiado antes de avisar?**
+
+Con `@={}` el modelo avisa a la vista y la vista avisa al modelo. Si no se comprueba que el valor sea distinto, se avisarían el uno al otro sin parar y se produciría un bucle infinito.
+
+**¿Por qué el modelo devuelve un enum `Validacion` y no un texto?**
+
+Los textos pertenecen a la interfaz (idioma, formato) y están en `strings.xml`. El modelo solo dice qué ha fallado y es la vista la que decide qué mensaje mostrar. Así el modelo no depende de Android y se puede probar con JUnit sin emulador.
+
+**¿Por qué los setters del resultado y del error son privados?**
+
+Porque solo el modelo sabe cuándo hay un resultado o un error. Si fueran públicos, cualquier clase podría dejar el modelo en un estado incoherente, por ejemplo con un error y un resultado a la vez.
+
+**¿Por qué el resultado caduca cuando cambia la entrada?**
+
+Porque el resultado solo corresponde al número con el que se calculó. Si el usuario cambia el número, mostrar el resultado anterior sería engañoso.
+
+**¿Por qué el controlador no tiene referencias a vistas?**
+
+Porque su trabajo es recibir la acción del usuario y pasársela al modelo. Si tuviera vistas, haría el trabajo de la vista y no se podría probar sin Android. Como solo conoce al modelo, se prueba con JUnit.
+
+**¿Por qué `limpiar()` no se queda en `setEntrada("")`?**
+
+Porque si la entrada ya estaba vacía (con el error de "campo vacío" en pantalla), `setEntrada("")` no cambia nada y el error se quedaría. Por eso `limpiar()` también pone el resultado y el error a su valor inicial.
+
+**¿Por qué se guarda solo la entrada y si ya se calculó, y no el resultado?**
+
+Porque el resultado y el error se pueden volver a obtener a partir de la entrada llamando a `calcular()`. Guardar solo lo mínimo evita tener datos duplicados que se puedan desincronizar.
+
+**¿Por qué se restaura el estado antes de enlazar el modelo con la vista?**
+
+Para que la pantalla nazca ya con los datos correctos. Si se enlazara antes, se vería un instante la pantalla vacía y después cambiaría.
+
+**¿Por qué se usa `INVISIBLE` y no `GONE` para ocultar el resultado?**
+
+Con `GONE` el texto no ocupa espacio y, al aparecer el resultado, el botón se desplazaría hacia abajo. Con `INVISIBLE` el hueco se mantiene y la pantalla no salta.
+
+[Añade aquí las demás preguntas de «Explícalo con tus palabras» que aparezcan en la guía.]
+
+---
+
+## Autoevaluación
+
+[Copia aquí la autoevaluación de la guía y complétala.]
 
 ---
 
 ## ✅ Lista de comprobación
 
-- [ ] La app no se cierra con ninguna entrada.
-- [ ] Todos los textos están en `strings.xml` (ningún aviso *Hardcoded string*).
-- [ ] No quedan números mágicos en `MainActivity`.
-- [ ] `onCreate()` solo prepara la pantalla; la lógica está en `calcularEdad()`.
-- [ ] El trabajo está en la rama `v2-validacion`, no en `main`.
+- [ ] El proyecto compila y la app funciona: vacío, texto, 0 y 31 muestran su error; 6 muestra 42; Limpiar borra todo.
+- [ ] No queda ningún `findViewById`.
+- [ ] `MainActivity` solo crea y conecta las piezas y guarda el estado.
+- [ ] El modelo no importa nada de `android.*` (salvo `androidx.databinding`) ni contiene textos para el usuario.
+- [ ] Hay al menos 5 pruebas JUnit en `app/src/test`, todas en verde.
+- [ ] Hay un commit por paso (`Paso N: …`) con su etiqueta `paso-1` … `paso-7`.
+- [ ] La rama `v3-mvc` y las etiquetas están subidas a GitHub (`git push -u origin v3-mvc --tags`) y el repositorio es público.
+
+---
+
+# 🐶 EdadCanina · v2 (historial)
+
+[Aquí debajo deja el README de la v2 tal como lo tenías.]
