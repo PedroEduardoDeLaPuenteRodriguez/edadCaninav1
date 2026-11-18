@@ -1,6 +1,11 @@
 package es.davante.edadcanina.modelo;
 
-public class EdadCaninaModelo {
+import androidx.databinding.BaseObservable;
+import androidx.databinding.Bindable;
+
+import es.davante.edadcanina.BR;
+
+public class EdadCaninaModelo extends BaseObservable {
 
     public static final int FACTOR_CANINO = 7;
     public static final int EDAD_MINIMA = 1;
@@ -10,6 +15,7 @@ public class EdadCaninaModelo {
     private Integer edadHumana = null;
     private Validacion error = Validacion.OK;
 
+    @Bindable
     public String getEntrada() {
         return entrada;
     }
@@ -22,18 +28,23 @@ public class EdadCaninaModelo {
             return;
         }
         entrada = nueva;
-        edadHumana = null;
-        error = Validacion.OK;
+        notifyPropertyChanged(BR.entrada);
+
+        setEdadHumana(null);
+        setError(Validacion.OK);
     }
 
+    @Bindable
     public boolean isHayResultado() {
         return edadHumana != null;
     }
 
+    @Bindable
     public int getEdadHumana() {
         return edadHumana == null ? 0 : edadHumana;
     }
 
+    @Bindable
     public Validacion getError() {
         return error;
     }
@@ -65,6 +76,12 @@ public class EdadCaninaModelo {
         return Validacion.OK;
     }
 
+    public void limpiar() {
+        setEntrada("");
+        setEdadHumana(null);
+        setError(Validacion.OK);
+    }
+
     private Validacion rechazar(Validacion motivo) {
         setEdadHumana(null);
         setError(motivo);
@@ -72,10 +89,20 @@ public class EdadCaninaModelo {
     }
 
     private void setEdadHumana(Integer nueva) {
+        if ((edadHumana == null && nueva == null)
+                || (edadHumana != null && edadHumana.equals(nueva))) {
+            return;
+        }
         edadHumana = nueva;
+        notifyPropertyChanged(BR.edadHumana);
+        notifyPropertyChanged(BR.hayResultado);
     }
 
     private void setError(Validacion nuevo) {
+        if (error == nuevo) {
+            return;
+        }
         error = nuevo;
+        notifyPropertyChanged(BR.error);
     }
 }
